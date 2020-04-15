@@ -81,6 +81,10 @@ private:
 
     //! Pointer to driver
     R2000Driver* driver_;
+
+    uint32_t base_time_;
+    ros::Time ros_base_time_;
+    bool first_data_;
 };
 }
 
