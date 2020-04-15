@@ -57,6 +57,9 @@ R2000Node::R2000Node():nh_("~")
     //-------------------------------------------------------------------------
     scan_publisher_ = nh_.advertise<sensor_msgs::LaserScan>("scan",100);
     cmd_subscriber_ = nh_.subscribe("control_command",100,&R2000Node::cmdMsgCallback,this);
+    ros::Duration publish_interval(1/(2*std::atof(driver_->getParametersCached().at("scan_frequency").c_str())));
+     ROS_INFO_STREAM("publish_interval:"<<publish_interval);
+
     get_scan_data_timer_ = nh_.createTimer(ros::Duration(1/(2*std::atof(driver_->getParametersCached().at("scan_frequency").c_str()))), &R2000Node::getScanData, this);
 
     first_data_ = true;
@@ -121,6 +124,7 @@ void R2000Node::getScanData(const ros::TimerEvent &e)
     if( scandata.amplitude_data.empty() || scandata.distance_data.empty() || scandata.headers.empty() )
         return;
 
+    ROS_INFO_STREAM("header size:"<<scandata.headers.size());
     std::uint64_t sensor_time = scandata.headers[0].timestamp_raw;
     
     if(first_data_)
@@ -132,11 +136,12 @@ void R2000Node::getScanData(const ros::TimerEvent &e)
     }
 
     std::uint64_t time_diff = sensor_time - base_time_;
-    uint32_t diff_sec = (uint32_t)(time_diff/10e9);
-    uint32_t diff_nsec = (uint32_t)(time_diff - (uint64_t)diff_sec*10e9);
+    uint32_t diff_sec = (uint32_t)(time_diff/1e9);
+    uint32_t diff_nsec = (uint32_t)(time_diff - (uint64_t)diff_sec*1e9);
     ros::Duration delta_t(diff_sec, diff_nsec);
     ros::Time scan_time_ros = ros_base_time_ + delta_t;
     ROS_INFO_STREAM("diff sec:"<<diff_sec<<" diff nsec:"<<diff_nsec);
+    ROS_INFO_STREAM("Duration:"<<delta_t);
     ROS_INFO_STREAM("Ros scan time:"<<scan_time_ros);
     sensor_msgs::LaserScan scanmsg;
     scanmsg.header.frame_id = frame_id_;
