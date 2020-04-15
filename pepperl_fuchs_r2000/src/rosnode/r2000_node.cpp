@@ -124,7 +124,7 @@ void R2000Node::getScanData(const ros::TimerEvent &e)
     if( scandata.amplitude_data.empty() || scandata.distance_data.empty() || scandata.headers.empty() )
         return;
 
-    ROS_INFO_STREAM("header size:"<<scandata.headers.size());
+    //ROS_INFO_STREAM("header size:"<<scandata.headers.size());
     std::uint64_t sensor_time = scandata.headers[0].timestamp_raw;
     
     if(first_data_)
@@ -140,9 +140,9 @@ void R2000Node::getScanData(const ros::TimerEvent &e)
     uint32_t diff_nsec = (uint32_t)(time_diff - (uint64_t)diff_sec*1e9);
     ros::Duration delta_t(diff_sec, diff_nsec);
     ros::Time scan_time_ros = ros_base_time_ + delta_t;
-    ROS_INFO_STREAM("diff sec:"<<diff_sec<<" diff nsec:"<<diff_nsec);
-    ROS_INFO_STREAM("Duration:"<<delta_t);
-    ROS_INFO_STREAM("Ros scan time:"<<scan_time_ros);
+    //ROS_INFO_STREAM("diff sec:"<<diff_sec<<" diff nsec:"<<diff_nsec);
+    //ROS_INFO_STREAM("Duration:"<<delta_t);
+    //ROS_INFO_STREAM("Ros scan time:"<<scan_time_ros);
     sensor_msgs::LaserScan scanmsg;
     scanmsg.header.frame_id = frame_id_;
     scanmsg.header.stamp = scan_time_ros;
