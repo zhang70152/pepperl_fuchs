@@ -126,23 +126,27 @@ void R2000Node::getScanData(const ros::TimerEvent &e)
 
     //ROS_INFO_STREAM("header size:"<<scandata.headers.size());
     std::uint64_t sensor_time = scandata.headers[0].timestamp_raw;
-    
+    std::uint32_t fractional_part = (sensor_time& 0x00000000FFFFFFFF) <<32;
+    std::uint32_t integer_part  = sensor_time >>32;
+    double final_sensor_time = (double)integer_part + (double)fractional_part/pow(2,32);
+
     if(first_data_)
     {
         ros_base_time_ = ros::Time::now();
-        base_time_ = sensor_time;
+        base_time_ = final_sensor_time;
         first_data_ = false;
         return;
     }
 
-    std::uint64_t time_diff = sensor_time - base_time_;
-    uint32_t diff_sec = (uint32_t)(time_diff/1e9);
-    uint32_t diff_nsec = (uint32_t)(time_diff - (uint64_t)diff_sec*1e9);
-    ros::Duration delta_t(diff_sec, diff_nsec);
+    double time_diff = final_sensor_time - base_time_;
+    double fractional, integer;
+    double fractional = modf(time_diff, &integer);
+
+    ros::Duration delta_t(integer, fractional*1e9);
     ros::Time scan_time_ros = ros_base_time_ + delta_t;
     //ROS_INFO_STREAM("diff sec:"<<diff_sec<<" diff nsec:"<<diff_nsec);
-    //ROS_INFO_STREAM("Duration:"<<delta_t);
-    //ROS_INFO_STREAM("Ros scan time:"<<scan_time_ros);
+    ROS_INFO_STREAM("Duration:"<<delta_t);
+    ROS_INFO_STREAM("Ros scan time:"<<scan_time_ros);
     sensor_msgs::LaserScan scanmsg;
     scanmsg.header.frame_id = frame_id_;
     scanmsg.header.stamp = scan_time_ros;

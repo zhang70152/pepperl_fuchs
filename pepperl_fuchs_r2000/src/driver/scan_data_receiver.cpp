@@ -182,8 +182,8 @@ bool ScanDataReceiver::handleNextPacket()
     
     std::uint64_t raw_time =  p->header.timestamp_raw;
 
-    std::uint32_t integer_part = raw_time <<32;
-    std::uint32_t fractional_part = raw_time >>32;
+    std::uint32_t fractional_part = (raw_time& 0x00000000FFFFFFFF) <<32;
+    std::uint32_t integer_part  = raw_time >>32;
 
     std::cout<<"integer_part:"<<integer_part<<"fractional_part:"<<fractional_part<<std::endl;
 
