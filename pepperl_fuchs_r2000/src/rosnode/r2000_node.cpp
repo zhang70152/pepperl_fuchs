@@ -124,9 +124,10 @@ void R2000Node::getScanData(const ros::TimerEvent &e)
     if( scandata.amplitude_data.empty() || scandata.distance_data.empty() || scandata.headers.empty() )
         return;
 
-    //ROS_INFO_STREAM("header size:"<<scandata.headers.size());
+    //Get the timestamp of the first package
+
     std::uint64_t sensor_time = scandata.headers[0].timestamp_raw;
-    std::uint32_t fractional_part = (sensor_time& 0x00000000FFFFFFFF) <<32;
+    std::uint32_t fractional_part = (sensor_time & 0x00000000FFFFFFFF);
     std::uint32_t integer_part  = sensor_time >>32;
     double final_sensor_time = (double)integer_part + (double)fractional_part/pow(2,32);
 
@@ -144,7 +145,9 @@ void R2000Node::getScanData(const ros::TimerEvent &e)
 
     ros::Duration delta_t(integer, fractional*1e9);
     ros::Time scan_time_ros = ros_base_time_ + delta_t;
-    //ROS_INFO_STREAM("diff sec:"<<diff_sec<<" diff nsec:"<<diff_nsec);
+
+
+
     ROS_INFO_STREAM("Duration:"<<delta_t);
     ROS_INFO_STREAM("Ros scan time:"<<scan_time_ros);
     sensor_msgs::LaserScan scanmsg;

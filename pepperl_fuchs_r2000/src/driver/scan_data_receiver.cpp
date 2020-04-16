@@ -179,13 +179,6 @@ bool ScanDataReceiver::handleNextPacket()
     // Parse payload of packet
     std::uint32_t* p_scan_data = (std::uint32_t*) &buf[p->header.header_size];
     int num_scan_points = p->header.num_points_packet;
-    
-    std::uint64_t raw_time =  p->header.timestamp_raw;
-
-    std::uint32_t fractional_part = (raw_time& 0x00000000FFFFFFFF) <<32;
-    std::uint32_t integer_part  = raw_time >>32;
-
-    std::cout<<"integer_part:"<<integer_part<<"fractional_part:"<<fractional_part<<std::endl;
 
     for( int i=0; i<num_scan_points; i++ )
     {
