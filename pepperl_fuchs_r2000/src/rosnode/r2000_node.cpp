@@ -126,24 +126,27 @@ void R2000Node::getScanData(const ros::TimerEvent &e)
 
     //Get the timestamp of the first package
 
-    std::uint64_t sensor_time = scandata.headers[0].timestamp_raw;
-    std::uint32_t fractional_part = (sensor_time & 0x00000000FFFFFFFF);
-    std::uint32_t integer_part  = sensor_time >>32;
-    double final_sensor_time = (double)integer_part + (double)fractional_part/pow(2,32);
+    std::uint64_t package_header_time = scandata.headers[0].timestamp_raw;
+
+    //Convert NTP time to sec.
+    std::uint32_t fractional_part = (package_header_time & 0x00000000FFFFFFFF);
+    std::uint32_t integer_part  = package_header_time >>32;
+    double scan_time_in_sec = (double)integer_part + (double)fractional_part/pow(2,32);
 
     if(first_data_)
     {
         ros_base_time_ = ros::Time::now();
-        base_time_ = final_sensor_time;
+        base_time_ = scan_time_in_sec;
         first_data_ = false;
         return;
     }
 
-    double time_diff = final_sensor_time - base_time_;
+    double time_diff = scan_time_in_sec - base_time_;
     double fractional, integer;
     double fractional = modf(time_diff, &integer);
 
-    ros::Duration delta_t(integer, fractional*1e9);
+    //ros::Duration delta_t(integer, fractional*1e9);
+    ros::Duration delta_t = ros::Duration().fromSec(time_diff);
     ros::Time scan_time_ros = ros_base_time_ + delta_t;
 
 
