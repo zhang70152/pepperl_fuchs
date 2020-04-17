@@ -148,10 +148,10 @@ void R2000Node::getScanData(const ros::TimerEvent &e)
     ros::Time scan_time_ros = ros_base_time_ + delta_t;
 
 
-
     //ROS_INFO_STREAM("Elapse since base time:"<<delta_t);
     //ROS_INFO_STREAM("Ros scan time:"<<scan_time_ros);
     //ROS_INFO_STREAM("Delta time:"<<time_diff - last_time_diff_);
+    
     last_time_diff_ = time_diff; 
     sensor_msgs::LaserScan scanmsg;
     scanmsg.header.frame_id = frame_id_;
@@ -174,6 +174,14 @@ void R2000Node::getScanData(const ros::TimerEvent &e)
         scanmsg.intensities[i] = scandata.amplitude_data[i];
     }
     scan_publisher_.publish(scanmsg);
+
+    
+    ros::Duration  scan_msg_interval = scan_time_ros - last_scan_time_;
+    ROS_INFO_STREAM("scan delta time in ROS time:"<<scan_msg_interval);
+    
+    //Reset the new base time to now.
+    ros_base_time_ = ros::Time::now(); 
+    last_scan_time_ = scan_time_ros;
 }
 
 //-----------------------------------------------------------------------------

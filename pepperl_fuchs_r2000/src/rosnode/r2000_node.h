@@ -84,6 +84,7 @@ private:
 
     double base_time_;
     ros::Time ros_base_time_;
+    ros::Time last_scan_time_;
     bool first_data_;
     double last_time_diff_;
 };
