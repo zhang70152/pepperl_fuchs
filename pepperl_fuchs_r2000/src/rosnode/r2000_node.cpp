@@ -57,10 +57,11 @@ R2000Node::R2000Node():nh_("~")
     //-------------------------------------------------------------------------
     scan_publisher_ = nh_.advertise<sensor_msgs::LaserScan>("scan",100);
     cmd_subscriber_ = nh_.subscribe("control_command",100,&R2000Node::cmdMsgCallback,this);
-    ros::Duration publish_interval(1/(2*std::atof(driver_->getParametersCached().at("scan_frequency").c_str())));
-     ROS_INFO_STREAM("publish_interval:"<<publish_interval);
-
-    get_scan_data_timer_ = nh_.createTimer(ros::Duration(1/(2*std::atof(driver_->getParametersCached().at("scan_frequency").c_str()))), &R2000Node::getScanData, this);
+    ros::Duration publish_interval(2/(2*std::atof(driver_->getParametersCached().at("scan_frequency").c_str())));
+    ROS_INFO_STREAM("publish_interval:"<<publish_interval);
+    
+    //Here change from 1/2 to 2/2. make more sense and seems publish rate and data is ok.
+    get_scan_data_timer_ = nh_.createTimer(ros::Duration(2/(2*std::atof(driver_->getParametersCached().at("scan_frequency").c_str()))), &R2000Node::getScanData, this);
 
     first_data_ = true;
 
@@ -142,17 +143,16 @@ void R2000Node::getScanData(const ros::TimerEvent &e)
     }
 
     double time_diff = scan_time_in_sec - base_time_;
-    double fractional, integer;
-    double fractional = modf(time_diff, &integer);
-
-    //ros::Duration delta_t(integer, fractional*1e9);
+ 
     ros::Duration delta_t = ros::Duration().fromSec(time_diff);
     ros::Time scan_time_ros = ros_base_time_ + delta_t;
 
 
 
-    ROS_INFO_STREAM("Duration:"<<delta_t);
-    ROS_INFO_STREAM("Ros scan time:"<<scan_time_ros);
+    //ROS_INFO_STREAM("Elapse since base time:"<<delta_t);
+    //ROS_INFO_STREAM("Ros scan time:"<<scan_time_ros);
+    //ROS_INFO_STREAM("Delta time:"<<time_diff - last_time_diff_);
+    last_time_diff_ = time_diff; 
     sensor_msgs::LaserScan scanmsg;
     scanmsg.header.frame_id = frame_id_;
     scanmsg.header.stamp = scan_time_ros;
