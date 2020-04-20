@@ -61,7 +61,7 @@ R2000Node::R2000Node():nh_("~")
     ROS_INFO_STREAM("publish_interval:"<<publish_interval);
     
     //Here change from 1/2 to 2/2. make more sense and seems publish rate and data is ok.
-    get_scan_data_timer_ = nh_.createTimer(ros::Duration(2/(2*std::atof(driver_->getParametersCached().at("scan_frequency").c_str()))), &R2000Node::getScanData, this);
+    get_scan_data_timer_ = nh_.createWallTimer(ros::WallDuration(1.00*1.0/(2.0*std::atof(driver_->getParametersCached().at("scan_frequency").c_str()))), &R2000Node::getScanData, this);
 
     first_data_ = true;
 
@@ -110,8 +110,10 @@ bool R2000Node::connect()
 }
 
 //-----------------------------------------------------------------------------
-void R2000Node::getScanData(const ros::TimerEvent &e)
+void R2000Node::getScanData(const ros::WallTimerEvent &e)
 {
+  // ROS_INFO_STREAM("loop time:"<<ros::Time::now()-ttt_);
+    ttt_ = ros::Time::now();
     if( !driver_->isCapturing() )
     {
         std::cout << "ERROR: Laser range finder disconnected. Trying to reconnect..." << std::endl;
@@ -121,10 +123,17 @@ void R2000Node::getScanData(const ros::TimerEvent &e)
             usleep((2*1000000));
         }
     }
+     // ros::Duration abc = ros::Time::now() - ttt_;
+       //   ROS_INFO_STREAM("process time:"<<abc.toSec());
+
     auto scandata = driver_->getFullScan();
     if( scandata.amplitude_data.empty() || scandata.distance_data.empty() || scandata.headers.empty() )
         return;
+     ros::Duration abc = ros::Time::now() - ttt_;
+    // ROS_INFO_STREAM("process time:"<<abc.toSec());
 
+
+    
     //Get the timestamp of the first package
 
     std::uint64_t package_header_time = scandata.headers[0].timestamp_raw;
@@ -155,7 +164,8 @@ void R2000Node::getScanData(const ros::TimerEvent &e)
     last_time_diff_ = time_diff; 
     sensor_msgs::LaserScan scanmsg;
     scanmsg.header.frame_id = frame_id_;
-    scanmsg.header.stamp = scan_time_ros;
+    //scanmsg.header.stamp = scan_time_ros;
+    scanmsg.header.stamp = ros::Time::now();
 
     scanmsg.angle_min = -M_PI;
     scanmsg.angle_max = +M_PI;
@@ -176,12 +186,18 @@ void R2000Node::getScanData(const ros::TimerEvent &e)
     scan_publisher_.publish(scanmsg);
 
     
-    ros::Duration  scan_msg_interval = scan_time_ros - last_scan_time_;
-    ROS_INFO_STREAM("scan delta time in ROS time:"<<scan_msg_interval);
+   // ros::Duration  scan_msg_interval = scan_time_ros - last_scan_time_;
+    ros::Duration  scan_msg_interval = ros::Time::now() - last_scan_time_;
+    //ROS_INFO_STREAM("scan delta time in ROS time:"<<scan_msg_interval);
     
     //Reset the new base time to now.
     ros_base_time_ = ros::Time::now(); 
-    last_scan_time_ = scan_time_ros;
+   // last_scan_time_ = scan_time_ros;
+   last_scan_time_ = ros::Time::now();
+   // ROS_INFO_STREAM("process time:"<<ros_base_time_ - ttt_);
+    
+    
+
 }
 
 //-----------------------------------------------------------------------------

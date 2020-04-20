@@ -142,6 +142,8 @@ private:
 
     //! time in seconds since epoch, when last data was received
     double last_data_time_;
+    std::chrono::time_point<std::chrono::high_resolution_clock> last_packet_ready_time_;
+   std::chrono::time_point<std::chrono::high_resolution_clock> last_socket_time_;
 };
 
 }

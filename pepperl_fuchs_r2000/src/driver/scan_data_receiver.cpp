@@ -14,7 +14,7 @@
 
 namespace pepperl_fuchs {
 
-ScanDataReceiver::ScanDataReceiver(const std::string hostname, const int tcp_port):inbuf_(4096),instream_(&inbuf_),ring_buffer_(65536),scan_data_()
+ScanDataReceiver::ScanDataReceiver(const std::string hostname, const int tcp_port):inbuf_(1024),instream_(&inbuf_),ring_buffer_(65536),scan_data_()
 {
     last_data_time_ = std::time(0);
     tcp_socket_ = 0;
@@ -108,9 +108,13 @@ void ScanDataReceiver::handleSocketRead(const boost::system::error_code& error)
 
         // Handle (read and parse) packets stored in the internal ring buffer
         while( handleNextPacket() ) {}
+        
+        auto start = std::chrono::high_resolution_clock::now();
 
         // Read data asynchronously
         boost::asio::async_read(*tcp_socket_, inbuf_, boost::bind(&ScanDataReceiver::handleSocketRead, this, boost::asio::placeholders::error));
+        auto finish = std::chrono::high_resolution_clock::now();
+        
     }
     else
     {
@@ -118,7 +122,10 @@ void ScanDataReceiver::handleSocketRead(const boost::system::error_code& error)
             std::cerr << "ERROR: " << "data connection error: " << error.message() << "(" << error.value() << ")" << std::endl;
         disconnect();
     }
+    std::chrono::duration<double, std::milli> elapsed = std::chrono::high_resolution_clock::now() - last_socket_time_;
+    //std::cout <<"socket loop time: " << elapsed.count() << " miliseconds" << std::endl;
     last_data_time_ = std::time(0);
+    last_socket_time_ = std::chrono::high_resolution_clock::now();
 }
 
 //-----------------------------------------------------------------------------
@@ -162,17 +169,23 @@ bool ScanDataReceiver::handleNextPacket()
 
     // Lock internal outgoing data queue, automatically unlocks at end of function
     std::unique_lock<std::mutex> lock(data_mutex_);
+    auto start = std::chrono::high_resolution_clock::now();
 
     // Create new scan container if necessary
     if( p->header.packet_number == 1 || scan_data_.empty() )
     {
         scan_data_.emplace_back();
-        if( scan_data_.size()>100 )
+        if( scan_data_.size()>5 )
         {
             scan_data_.pop_front();
             std::cerr << "Too many scans in receiver queue: Dropping scans!" << std::endl;
         }
         data_notifier_.notify_one();
+
+        std::chrono::duration<double, std::milli> packet_time = std::chrono::high_resolution_clock::now() - last_packet_ready_time_;
+
+	//std::cout<<"packet ready duration:"<<packet_time.count()<<std::endl;
+	last_packet_ready_time_ =  std::chrono::high_resolution_clock::now();
     }
     ScanData& scandata = scan_data_.back();
 
@@ -192,7 +205,7 @@ bool ScanDataReceiver::handleNextPacket()
 
     // Save header
     scandata.headers.push_back(p->header);
-
+																			
     return true;
 }
 
@@ -283,11 +296,18 @@ ScanData ScanDataReceiver::getScan()
 //-----------------------------------------------------------------------------
 ScanData ScanDataReceiver::getFullScan()
 {
+    
     std::unique_lock<std::mutex> lock(data_mutex_);
     while( checkConnection() && isConnected() && scan_data_.size()<2 )
     {
+	auto start = std::chrono::high_resolution_clock::now();
         data_notifier_.wait_for(lock, std::chrono::seconds(1));
+	auto finish = std::chrono::high_resolution_clock::now();
+	std::chrono::duration<double, std::milli> elapsed = finish - start;
+        //std::cout <<"data size:"<<scan_data_.size()<< "  wait notifier Time: " << elapsed.count() << " miliseconds" << std::endl;
+
     }
+    
     ScanData data;
     if( scan_data_.size() >= 2 && isConnected() )
     {

@@ -53,13 +53,13 @@ private:
     bool connect();
 
     //! Time callback function for getting data from the driver and sending them out
-    void getScanData( const ros::TimerEvent& e);
+    void getScanData( const ros::WallTimerEvent& e);
 
     //! Internal ROS node handle
     ros::NodeHandle nh_;
 
     //! Callback timer for getScanData(...)
-    ros::Timer get_scan_data_timer_;
+    ros::WallTimer get_scan_data_timer_;
 
     //! ROS publisher for publishing scan data
     ros::Publisher scan_publisher_;
@@ -87,6 +87,8 @@ private:
     ros::Time last_scan_time_;
     bool first_data_;
     double last_time_diff_;
+    ros::Time ttt_;
+
 };
 }
 
